@@ -1,0 +1,40 @@
+User
+user_id (unique, primary key)
+
+email (unique)
+
+password_hash
+
+is_email_verified
+
+created_at
+
+InventoryItem
+item_id (unique, primary key)
+
+user_id (foreign key, links to User)
+
+name
+
+description (optional)
+
+quantity
+
+unit (e.g., pcs, kg, etc., optional)
+
+created_at
+
+updated_at
+
+
+POST /api/register — Register user
+
+POST /api/login — Login user
+
+POST /api/items — Add new inventory item (auth required)
+
+GET /api/items — List all user’s items (auth required)
+
+PUT /api/items/:id — Update item (edit name, quantity, etc.)
+
+DELETE /api/items/:id — Delete item

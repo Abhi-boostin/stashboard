@@ -85,3 +85,23 @@ export const loginUser = async (req, res) => {
       res.status(500).json({ message: "Failed to fetch profile." });
     }
   };
+
+  export const changePassword = async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const user = await User.findById(req.user.userId);
+      if (!user) return res.status(404).json({ message: "User not found." });
+  
+      // Check if current password matches
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) return res.status(400).json({ message: "Current password is incorrect." });
+  
+      // Hash and set the new password
+      user.password = await bcrypt.hash(newPassword, 10);
+      await user.save();
+  
+      res.json({ message: "Password changed successfully." });
+    } catch (error) {
+      res.status(500).json({ message: "Server error." });
+    }
+  };

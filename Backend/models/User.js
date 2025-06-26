@@ -15,8 +15,10 @@ const userSchema = new mongoose.Schema({
   isEmailVerified: {
     type: Boolean,
     default: false,
-  }
-}, { timestamps: true }); // Adds createdAt and updatedAt automatically
+  },
+  otp: String,
+  otpExpiry: Date,
+}, { timestamps: true }); // Only options here
 
 const User = mongoose.model("User", userSchema);
 

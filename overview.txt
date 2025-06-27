@@ -1,40 +1,288 @@
-User
-user_id (unique, primary key)
+BACKEND WHAT I DID
+imported the dependencies at first intialised the node module npm i
+IMPORT EXPRESS , NODEMON, MONGODB,, DOTENV, MOONGOSE - to define the models in the backend
+then also used module instead of commonjs
+then moving on i started the plan and at first i just made an index.js file and imported dotenv for the env access
+setup port in the env file and the mongodb url
+make index.js
+import express make a express app
+make a get request (/) - to check if the server is running using req res and res.send()
+adding an console.log to figure out if the server is running or not ( on the console )
+making config/db.js
 
-email (unique)
+db.js:
+import mongoose from mongoose
+create a function async - await - (try - catch)
+try()
+in await - connect to the mongodb url 
+adding mongodb url in env file
+useNewUrlParser: true,
+      useUnifiedTopology: true,
+we add these because just to not use the legacy url parser and server discovery and monitoring engine
+log dediya 
+catch()
+console error
+exit the process with code 1 if failed
+export the function
 
-password_hash
 
-is_email_verified
+SCHEMA DESIGN
+models/user.js
+models/inventoryitems.js
 
-created_at
 
-InventoryItem
-item_id (unique, primary key)
+USER.JS
 
-user_id (foreign key, links to User)
+import mongoose from mongoose
+make a variable that is a new mongoose.Schema({
+email:{},
+password:{},
+isemailverfied:{},
+otp:
+otpExpiry:
+});
+So timestamps: true is like adding two "hidden" fields that Mongoose manages automatically!
+const User = mongoose.model("User", userSchema);
+Creates a Mongoose model named "User" using the schema
+The model name "User" will create/use a collection called "users" in MongoDB
+export User
 
+INVENTORYITEMS.JS
+
+var inventoryschema = new mongoose.Schema
 name
-
-description (optional)
-
 quantity
+ user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // Reference to the User model
+    required: true,
+timestamps
+make a new var save it in the mongoosemodel("name the model", schema that want to use)
 
-unit (e.g., pcs, kg, etc., optional)
 
-created_at
+CONTROLLERS/userCONTROLLERS.JS
 
-updated_at
+first import user.js model
+export registeruser fxn - async(req,res) -(try - (await) , catch)
+res.body get the email and password
+if !email or !password - email and pass required
+if not
+make a new var search for the input mail 
+const existingUser = await User.findOne({ email });
+if found in the db return already exist
+if not
+now we hash the password using bcrypt so we npm i bcrypt -  import bcrypt from bcryptjs
+const hashedPassword = await bcrypt.hash(password, 10);
+
+10:
+This is called the "salt rounds" or "cost factor"
+It determines how much work the computer has to do to create the hash
+Higher number = more secure but slower
+10 is a good balance between security and speed
+
+password is hashed now we want a otp generation
+
+UTILS/OTP.JS
+export const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+otpExpiry date  = current time adding 10 more mins
+const otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+now make a newUser = User(
+email
+password: hashedPassword
+isemailverified: false
+otp
+otpexpiry
+)
+await newUser.save();
+await sendOTPEmail(email, otp);
+
+utils/MAILER.JS
+
+otp send kara
+npm i nodemailer
+import nodemailer
+
+make a var transporter = nodemailer.createTransport({
+service
+auth{
+user
+pass:
+}
+});
+use nodemailer.sendMail
+  await transporter.sendMail({
+    from: `"Stashboard" <${process.env.SMTP_EMAIL}>`,
+    to,
+    subject: "Your OTP Code for Stashboard",
+    text: `Your OTP code is: ${otp}. Use it wisely! If you didn’t request this, blame your cat walking on the keyboard. Thanks for trusting us with your inventory—may your stock always be in your favor! 😄📦`,
+    html: `<p>Your OTP code is: <b>${otp}</b></p>`,
+  });
+};
 
 
-POST /api/register — Register user
+return 201 status
 
-POST /api/login — Login user
+catch(error)
+ registration error
 
-POST /api/items — Add new inventory item (auth required)
 
-GET /api/items — List all user’s items (auth required)
+now for complete registration we do complete verification making a router
 
-PUT /api/items/:id — Update item (edit name, quantity, etc.)
+find email is not exist not exist
+and then find the mail check isverify if true already exist and then if not compare the saved otp 
+with otp expiry time
+check the expiry time and then 
+is verified true and then otp and otpexpiry set to undefined
+- email verified
 
-DELETE /api/items/:id — Delete item
+
+LOGIN USER FUNCTION:
+
+email pass check
+check with the hashed bcrypt password
+
+npm i jasonwebtoken
+import jwt 
+jwt sign export in a varible
+save jwt secret in the env file
+if found make a jwt.sign and then 	
+add an expiry of 1hr this will give an hour long login session
+give back an response with the jwt token
+
+
+RESEND OTP FUNCTION
+
+  const otp = generateOTP();
+    const otpExpiry = Date.now() + 10 * 60 * 1000;
+    user.otp = otp;
+    user.otpExpiry = otpExpiry;
+    await user.save();
+ res.json({ message: "OTP resent to your email." });
+
+ GETPROFILE FUNCTION
+
+
+get userid and email give a 200 json response 
+return email, userID, message
+
+CHANGE PASSWORD FUNCTION
+
+get current pass and new pass also the jwt is added in the header
+find the user with is userid
+match the current pass after hashing with the bcrypt.compare(currentpassword)
+hash the new pass and save it in the new hashed password in the password field
+user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: "Password changed successfully." });
+
+
+
+ROUTES/USERROUTES.JS
+
+
+import express to write express app
+import all the fxn from the usercontroller
+
+make a express router
+create routes
+/register
+/login
+/verify-otp
+/resend-otp
+/profile
+/profile/password
+
+router.post("/register", registerUser);
+router.post("/login", loginUser);
+
+// OTP verification routes
+router.post("/verify-otp", verifyOTP);      // <-- Add this line
+router.post("/resend-otp", resendOTP);      // <-- Add this line (optional)
+
+// Authenticated user routes
+router.get("/profile", authenticateToken, getProfile);
+router.put("/profile/password", authenticateToken, changePassword);
+
+
+import an authmiddleware
+the middleware make a fxn authenticatetoken req res next (forward route)
+
+This middleware checks if the incoming request has a valid JWT token in the Authorization header.
+If the token is valid, it lets the request continue; otherwise, it blocks access with a 403 error.
+
+
+
+
+CONTROLLER/ITEMCONTROLLER.JS
+
+geetitems - userid se find krke uske asigned sare items
+add items-
+updateitems-
+
+export const updateItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, quantity } = req.body;
+    const item = await InventoryItem.findOneAndUpdate(
+      { _id: id, user: req.user.userId },
+      { name, quantity },
+      { new: true }
+    );
+    if (!item) return res.status(404).json({ message: "Item not found." });
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update item." });
+  }
+};
+
+
+
+Calls the findOneAndUpdate method on the InventoryItem model.
+await waits for the database operation to finish and assigns the result to item.
+Apply to itemControll...
+This is the filter (search criteria):
+Looks for an item with _id equal to id (the item you want to update).
+Also checks that the user field matches the current user's ID (req.user.userId), ensuring users can only update their own items.
+Apply to itemControll...
+This is the update object:
+Sets the name and quantity fields of the found item to the new values provided in the request.
+Apply to itemControll...
+This is the options object:
+{ new: true } tells Mongoose to return the updated item (not the old one before the update).
+Apply to itemControll...
+Closes the findOneAndUpdate function call.
+
+
+
+
+
+findoneanddelete
+
+export const deleteItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await InventoryItem.findOneAndDelete({ _id: id, user: req.user.userId });
+    if (!item) return res.status(404).json({ message: "Item not found." });
+    res.json({ message: "Item deleted." });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete item." });
+  }
+};
+
+
+COMPLETE IS DONE
+
+
+
+
+
+
+
+
+
+
+
+
